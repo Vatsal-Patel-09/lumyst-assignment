@@ -3,9 +3,15 @@
 import { addEdge, applyEdgeChanges, applyNodeChanges, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useState } from "react";
+import { CustomBidirectionalEdge } from "../components/CustomBidirectionalEdge";
 import { convertDataToGraphNodesAndEdges } from "../core/data/data-converter";
 import { GraphFormatService } from "../core/graph-format.service";
 import { ReactFlowService } from "../core/react-flow.service";
+
+// Register custom edge types
+const edgeTypes = {
+	customBidirectional: CustomBidirectionalEdge,
+};
 
 const graphFormatService = new GraphFormatService();
 const reactFlowService = new ReactFlowService();
@@ -57,6 +63,7 @@ export default function App() {
 			<ReactFlow
 				nodes={nodes}
 				edges={edges}
+				edgeTypes={edgeTypes}
 				onNodesChange={onNodesChange}
 				onEdgesChange={onEdgesChange}
 				onConnect={onConnect}

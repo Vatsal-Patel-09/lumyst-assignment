@@ -7,6 +7,12 @@ import type {
 	GraphNode,
 } from "../types";
 import analysisData from "./analysis.json";
+import testData from "./test-data.json";
+
+// 🧪 TOGGLE THIS TO SWITCH BETWEEN TEST AND REAL DATA
+const USE_TEST_DATA = true;
+
+const dataSource = USE_TEST_DATA ? testData : analysisData.analysisData;
 
 export function convertDataToGraphNodesAndEdges(): {
 	graphNodes: GraphNode[];
@@ -16,19 +22,19 @@ export function convertDataToGraphNodesAndEdges(): {
 	c2Relationships: C2Relationship[];
 	crossC1C2Relationships: CrossC1C2Relationship[];
 } {
-	const graphNodes: GraphNode[] = analysisData.analysisData.graphNodes.map((node) => ({
+	const graphNodes: GraphNode[] = dataSource.graphNodes.map((node) => ({
 		id: node.id,
 		label: node.label,
 	}));
 
-	const graphEdges: GraphEdge[] = analysisData.analysisData.graphEdges.map((edge) => ({
+	const graphEdges: GraphEdge[] = dataSource.graphEdges.map((edge) => ({
 		id: edge.id,
 		source: edge.source,
 		target: edge.target,
 		label: edge.label ?? "",
 	}));
 
-	const c1Output: C1Output[] = analysisData.analysisData.c1Output.map((output) => ({
+	const c1Output: C1Output[] = (dataSource.c1Output || []).map((output: any) => ({
 		id: output.id,
 		label: output.c1Category,
 		c1Category: output.c1Category,
@@ -36,8 +42,8 @@ export function convertDataToGraphNodesAndEdges(): {
 		nodeIds: output.nodeIds,
 	}));
 
-	const c2Subcategories: C2Subcategory[] = analysisData.analysisData.c2Subcategories.map(
-		(subcategory) => ({
+	const c2Subcategories: C2Subcategory[] = dataSource.c2Subcategories.map(
+		(subcategory: any) => ({
 			id: subcategory.id,
 			label: subcategory.c2Name,
 			c1CategoryId: subcategory.c1CategoryId,
@@ -49,10 +55,10 @@ export function convertDataToGraphNodesAndEdges(): {
 		}),
 	);
 
-	const c2Relationships: C2Relationship[] = analysisData.analysisData.c2Relationships.map(
-		(relationship) => ({
+	const c2Relationships: C2Relationship[] = (dataSource.c2Relationships || []).map(
+		(relationship: any) => ({
 			id: relationship.id,
-			label: relationship.relationshipType,
+			label: relationship.relationshipType || relationship.label,
 			fromC2: relationship.fromC2,
 			toC2: relationship.toC2,
 			c1CategoryId: relationship.c1CategoryId,
@@ -60,9 +66,9 @@ export function convertDataToGraphNodesAndEdges(): {
 	);
 
 	const crossC1C2Relationships: CrossC1C2Relationship[] =
-		analysisData.analysisData.crossC1C2Relationships.map((relationship) => ({
+		(dataSource.crossC1C2Relationships || []).map((relationship: any) => ({
 			id: relationship.id,
-			label: relationship.relationshipType,
+			label: relationship.relationshipType || relationship.label,
 			fromC1: relationship.fromC1,
 			fromC2: relationship.fromC2,
 			toC1: relationship.toC1,

@@ -1,0 +1,97 @@
+{
+  "graphNodes": [
+    {
+      "id": "node_1",
+      "label": "User Service"
+    },
+    {
+      "id": "node_2",
+      "label": "Auth Service"
+    },
+    {
+      "id": "node_3",
+      "label": "Database"
+    },
+    {
+      "id": "node_4",
+      "label": "API Gateway"
+    }
+  ],
+  "graphEdges": [
+    {
+      "id": "edge_1_to_2",
+      "source": "node_1",
+      "target": "node_2",
+      "label": "authenticates"
+    },
+    {
+      "id": "edge_2_to_1",
+      "source": "node_2",
+      "target": "node_1",
+      "label": "returns token"
+    },
+    {
+      "id": "edge_1_to_3",
+      "source": "node_1",
+      "target": "node_3",
+      "label": "queries"
+    },
+    {
+      "id": "edge_3_to_1",
+      "source": "node_3",
+      "target": "node_1",
+      "label": "sends data"
+    },
+    {
+      "id": "edge_4_to_1",
+      "source": "node_4",
+      "target": "node_1",
+      "label": "routes request"
+    }
+  ],
+  "c1Output": [
+    {
+      "id": "c1_cat_1",
+      "c1Category": "Core Services",
+      "nodesInCategory": 2,
+      "nodeIds": ["node_1", "node_2"]
+    }
+  ],
+  "c2Subcategories": [
+    {
+      "id": "c2_sub_1",
+      "c1CategoryId": "c1_cat_1",
+      "c2Name": "Authentication",
+      "description": "Handles user authentication",
+      "purpose": "Security",
+      "nodeCount": 1,
+      "nodeIds": ["node_2"]
+    },
+    {
+      "id": "c2_sub_2",
+      "c1CategoryId": "c1_cat_1",
+      "c2Name": "User Management",
+      "description": "Manages user data",
+      "purpose": "CRUD Operations",
+      "nodeCount": 1,
+      "nodeIds": ["node_1"]
+    }
+  ],
+  "c2Relationships": [
+    {
+      "id": "c2_relationship_1",
+      "c1CategoryId": "c1_cat_1",
+      "fromC2": "Authentication",
+      "toC2": "User Management",
+      "label": "validates"
+    },
+    {
+      "id": "c2_relationship_2",
+      "c1CategoryId": "c1_cat_1",
+      "fromC2": "User Management",
+      "toC2": "Authentication",
+      "label": "requests auth"
+    }
+  ],
+  "crossC1C2Relationships": []
+}
