@@ -20,10 +20,13 @@ export default function App() {
 	const [nodes, setNodes] = useState<any[]>([]);
 	const [edges, setEdges] = useState<any[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
 		const loadGraph = async () => {
+			console.log('Starting graph load...');
 			try {
+				console.log('Converting data...');
 				const {
 					graphNodes,
 					graphEdges,
@@ -33,6 +36,10 @@ export default function App() {
 					crossC1C2Relationships
 				} = convertDataToGraphNodesAndEdges();
 
+				console.log('Data converted. Nodes:', graphNodes.length, 'Edges:', graphEdges.length);
+				console.log('C1:', c1Output.length, 'C2:', c2Subcategories.length);
+
+				console.log('Starting ELK layout...');
 				const layoutedData = await graphFormatService.layoutCategoriesWithNodes(
 					graphNodes,
 					graphEdges,
@@ -42,6 +49,7 @@ export default function App() {
 					crossC1C2Relationships
 				);
 
+				console.log('ELK layout complete, converting to React Flow...');
 				const { nodes: initialNodes, edges: initialEdges } = reactFlowService.convertDataToReactFlowDataTypes(
 					layoutedData.graphNodes,
 					layoutedData.c1Nodes,
@@ -49,11 +57,14 @@ export default function App() {
 					layoutedData.edges,
 				);
 
+				console.log('React Flow conversion complete. Setting state...');
 				setNodes(initialNodes);
 				setEdges(initialEdges);
 				setIsLoading(false);
+				console.log('Graph loaded successfully!');
 			} catch (error) {
 				console.error('Failed to load graph:', error);
+				setError(error instanceof Error ? error.message : 'Unknown error');
 				setIsLoading(false);
 			}
 		};
@@ -76,8 +87,18 @@ export default function App() {
 
 	if (isLoading) {
 		return (
-			<div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "white" }}>
-				<div>Loading graph layout...</div>
+			<div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", background: "white" }}>
+				<div style={{ marginBottom: "10px" }}>Loading graph layout...</div>
+				<div style={{ fontSize: "12px", color: "#666" }}>Check browser console for details</div>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div style={{ width: "100vw", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", background: "white" }}>
+				<div style={{ color: "red", marginBottom: "10px" }}>Error loading graph:</div>
+				<div style={{ fontSize: "12px", color: "#666" }}>{error}</div>
 			</div>
 		);
 	}

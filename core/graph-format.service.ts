@@ -16,18 +16,23 @@ export class GraphFormatService {
 		c2Relationships: C2Relationship[],
 		crossC1C2Relationships: CrossC1C2Relationship[]
 	) {
+		console.log('[GraphFormatService] Starting layout process...');
+		
 		// Create a mapping from C2 names to C2 IDs for relationships
 		const c2NameToIdMap = new Map();
 		c2Subcategories.forEach(c2 => {
 			c2NameToIdMap.set(c2.c2Name, c2.id);
 		});
 
+		console.log('[GraphFormatService] Preparing nodes...');
 		// Prepare all nodes
 		const allNodes = [
 			...graphNodes,
 			...c1Outputs.map(c1 => ({ ...c1, type: 'c1' as const })),
 			...c2Subcategories.map(c2 => ({ ...c2, type: 'c2' as const }))
 		];
+		
+		console.log(`[GraphFormatService] Total nodes: ${allNodes.length}`);
 
 		// Prepare all edges
 		const allEdges: GraphEdge[] = [
@@ -78,27 +83,80 @@ export class GraphFormatService {
 			}).filter((edge): edge is GraphEdge => edge !== null)
 		];
 
-		// Convert to ELK format
+		console.log(`[GraphFormatService] Total edges: ${allEdges.length}`);
+		console.log('[GraphFormatService] Calculating node connections...');
+
+		// Helper: Calculate node degree (number of connections)
+		const nodeConnections = new Map<string, { incoming: number; outgoing: number }>();
+		allNodes.forEach(node => {
+			nodeConnections.set(node.id, { incoming: 0, outgoing: 0 });
+		});
+		allEdges.forEach(edge => {
+			const source = nodeConnections.get(edge.source);
+			const target = nodeConnections.get(edge.target);
+			if (source) source.outgoing++;
+			if (target) target.incoming++;
+		});
+
+		console.log('[GraphFormatService] Converting to ELK format with layer constraints...');
+		// Convert to ELK format with layer constraints
 		const elkNodes: ElkNode[] = allNodes.map(node => {
 			// Dynamic sizing based on node type
 			let width = 150;
 			let height = 50;
+			let layerConstraint: string | undefined;
+			let priority: number | undefined;
+
+			const connections = nodeConnections.get(node.id);
+			const isLeafNode = connections?.outgoing === 0; // No outgoing edges = leaf/end node
+			const isIsolatedNode = connections?.incoming === 0 && connections?.outgoing === 0; // No connections at all
 
 			if ('type' in node) {
 				if (node.type === 'c1') {
+					// C1 nodes at the top
 					width = 180;
 					height = 70;
+					layerConstraint = 'FIRST';  // Force C1 to top layer
+					priority = 100;  // Highest priority
 				} else if (node.type === 'c2') {
+					// C2 nodes in middle layers
 					width = 160;
 					height = 60;
+					priority = 50;  // Medium priority
+				}
+			} else {
+				// Regular nodes
+				if (isIsolatedNode) {
+					// Isolated nodes at the very bottom
+					layerConstraint = 'LAST';
+					priority = -100;  // Lowest priority
+				} else if (isLeafNode) {
+					// Leaf/end nodes near bottom
+					priority = -50;  // Low priority
+				} else {
+					// Middle nodes
+					priority = 0;  // Normal priority
 				}
 			}
 
-			return {
+			const elkNode: ElkNode = {
 				id: node.id,
 				width,
 				height,
 			};
+
+			// Add layout options for layer constraints
+			if (layerConstraint || priority !== undefined) {
+				elkNode.layoutOptions = {};
+				if (layerConstraint) {
+					elkNode.layoutOptions['elk.layered.layering.layerConstraint'] = layerConstraint;
+				}
+				if (priority !== undefined) {
+					elkNode.layoutOptions['elk.priority'] = priority.toString();
+				}
+			}
+
+			return elkNode;
 		});
 
 		const elkEdges: ElkExtendedEdge[] = allEdges.map(edge => ({
@@ -120,9 +178,10 @@ export class GraphFormatService {
 				'elk.spacing.edgeNode': '30',           // Space between edges and nodes
 				'elk.spacing.edgeEdge': '15',           // Space between parallel edges
 				
-				// Layer assignment - ensures proper hierarchy
-				'elk.layered.layering.strategy': 'NETWORK_SIMPLEX',  // Best for hierarchical graphs
+				// Layer assignment - ensures proper hierarchy with strict top-to-bottom ordering
+				'elk.layered.layering.strategy': 'LONGEST_PATH',  // Respects layer constraints and priorities
 				'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',  // Optimized node placement
+				'elk.layered.considerModelOrder.strategy': 'PREFER_NODES',  // Respect node priorities
 				
 				// Edge routing - minimizes crossings
 				'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',  // Reduces edge crossings
@@ -140,9 +199,14 @@ export class GraphFormatService {
 			edges: elkEdges,
 		};
 
+		console.log(`[GraphFormatService] ELK graph prepared. Nodes: ${elkNodes.length}, Edges: ${elkEdges.length}`);
+		console.log('[GraphFormatService] Running ELK layout algorithm...');
+
 		try {
 			// Run ELK layout
 			const layoutedGraph = await this.elk.layout(graph);
+			
+			console.log('[GraphFormatService] ELK layout completed successfully!');
 
 			// Apply positions to all nodes
 			const nodePositions = new Map<string, { x: number; y: number; width: number; height: number }>();
