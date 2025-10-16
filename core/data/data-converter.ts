@@ -10,7 +10,7 @@ import analysisData from "./analysis.json";
 import testData from "./test-data.json";
 
 // 🧪 TOGGLE THIS TO SWITCH BETWEEN TEST AND REAL DATA
-const USE_TEST_DATA = true;
+const USE_TEST_DATA = false;
 
 const dataSource = USE_TEST_DATA ? testData : analysisData.analysisData;
 
